@@ -28,3 +28,7 @@ Scan the QR codes in [`QR Test Codes`](QR%20Test%20Codes), type the number on th
 
 - **`nook/`** + **`Resonance.xcodeproj`**: the native iPad app (SwiftUI). Open the project in Xcode and press ⌘R.
 - **`docs/`**: the web version above (HTML/CSS/JavaScript), hosted with GitHub Pages.
+
+## Hosting
+
+The link above is served by GitHub Pages from the `docs/` folder on `main`. If it shows a 404, turn Pages back on: **Settings → Pages → Build and deployment → Source: Deploy from a branch → `main` / `/docs` → Save**. The site is live again about a minute later, and every push to `main` updates it.
