@@ -76,6 +76,7 @@ function makeData(now = new Date()) {
   const Q = (title, details, icon, by, reward, posted, neededBy, helper = null) =>
     ({ id: "r" + rid++, title, details, icon, by, reward, postedAt: at(-posted), neededBy, helper });
   const requests = [
+    Q("Borrow a hammer", "Someone has put their wrench in locker 01. Can I borrow yours?", "hammer", alex, { kind: "thanks" }, 5, todayAt(18)),
     Q("Water my plants", "Away for the weekend. Six pots on the balcony, key is with concierge.", "leaf", priya, { kind: "coffee" }, 40, dayAt(1, 9)),
     Q("Help carry a couch upstairs", "Two-seater from the loading dock to level 5. Takes 10 minutes.", "sofa", sam, { kind: "cash", amount: 20 }, 15, todayAt(18)),
     Q("Collect a parcel for me", "Arriving at the mailroom around 2pm. Just hold onto it till I'm home.", "package", mei, { kind: "treat" }, 120, todayAt(17)),
