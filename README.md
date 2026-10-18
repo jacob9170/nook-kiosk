@@ -13,6 +13,7 @@ Everything runs on built-in test data that resets when you reload the page.
 | Booking | Use with | What happens |
 |---|---|---|
 | `482193` | Borrow, then Return | Cordless Drill Kit, locker 03 |
+| `573046` | Borrow, then Return | Claw Hammer, locker 04 (web version only) |
 | `715024` | Return | 4-Person Tent, locker 08 |
 | `920457` | Return | Pressure Washer, locker 09 (overdue) |
 | `306611` | Borrow | Too early: pickup window opens later |

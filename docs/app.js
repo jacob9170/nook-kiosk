@@ -358,7 +358,7 @@ async function submitCode(code) {
   }
 }
 
-const DEMO = [["482193", "Collect"], ["715024", "Return"], ["920457", "Overdue"], ["306611", "Too early"]];
+const DEMO = [["482193", "Collect"], ["573046", "Hammer"], ["715024", "Return"], ["920457", "Overdue"], ["306611", "Too early"]];
 
 SCREENS.scan = () => {
   const v = S.v;

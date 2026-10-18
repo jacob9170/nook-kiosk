@@ -18,6 +18,7 @@ function makeData(now = new Date()) {
 
   const items = {
     drill: { id: "drill", name: "Cordless Drill Kit", category: "Tools", icon: "drill", blurb: "18V drill with two batteries, charger and a 40-piece bit set.", days: 3 },
+    hammer: { id: "hammer", name: "Claw Hammer", category: "Tools", icon: "hammer", blurb: "16 oz steel claw hammer with a non-slip grip.", days: 2 },
     ladder: { id: "ladder", name: "Step Ladder", category: "Tools", icon: "move-vertical", blurb: "Folding 5-step aluminium ladder, 150 kg rated.", days: 2 },
     games: { id: "games", name: "Board Game Bundle", category: "Leisure", icon: "dice-5", blurb: "Catan, Codenames and Ticket to Ride.", days: 7 },
     mixer: { id: "mixer", name: "Stand Mixer", category: "Kitchen", icon: "cake-slice", blurb: "4.8 L stand mixer with whisk, paddle and dough hook.", days: 3 },
@@ -28,7 +29,6 @@ function makeData(now = new Date()) {
     picnic: { id: "picnic", name: "Picnic Set", category: "Outdoors", icon: "sandwich", blurb: "Insulated basket, rug and cutlery for four.", days: 3 },
     sewing: { id: "sewing", name: "Sewing Machine", category: "Home", icon: "scissors", blurb: "Beginner-friendly machine with thread kit.", days: 7 },
     mattress: { id: "mattress", name: "Air Mattress", category: "Home", icon: "bed-double", blurb: "Queen air bed with electric pump.", days: 5 },
-    speaker: { id: "speaker", name: "Party Speaker", category: "Leisure", icon: "speaker", blurb: "Bluetooth speaker with 12-hour battery.", days: 2 },
   };
 
   const L = (number, size, item, status) => ({ number, size, item: item ? { ...item } : null, status, unlocked: false });
@@ -36,7 +36,7 @@ function makeData(now = new Date()) {
     L(1, "M", items.ladder, "available"),
     L(2, "S", items.games, "available"),
     L(3, "M", items.drill, "reserved"),
-    L(4, "S", items.speaker, "available"),
+    L(4, "S", items.hammer, "reserved"),
     L(5, "M", items.mixer, "reserved"),
     L(6, "S", items.projector, "available"),
     L(7, "L", items.cleaner, "maintenance"),
@@ -64,6 +64,7 @@ function makeData(now = new Date()) {
     ({ code, firstName: who.firstName, unit: who.unit, item: { ...item }, locker, pickupStart, pickupEnd, returnDue, status });
   const bookings = [
     B("482193", alex, items.drill, 3, at(-10), at(50), dayAt(1, 18), "reserved"),
+    B("573046", sam, items.hammer, 4, at(-10), at(50), dayAt(2, 18), "reserved"),
     B("715024", priya, items.tent, 8, at(-3 * 1440), at(-3 * 1440 + 60), at(180), "onLoan"),
     B("306611", sam, items.mixer, 5, at(180), at(240), dayAt(1, 20), "reserved"),
     B("920457", jordan, items.washer, 9, at(-2 * 1440), at(-2 * 1440 + 60), at(-20 * 60), "onLoan"),
