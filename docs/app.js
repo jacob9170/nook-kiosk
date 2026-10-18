@@ -14,6 +14,7 @@ const S = {
   menu: false,
   idle: false,
   detail: null,          // locker number shown in the "What's available" detail
+  drop: null,            // { id, pick } choosing a locker after accepting a request
   set: { large: false, hc: false, rm: false, voice: false, reach: false },
 };
 
@@ -94,6 +95,7 @@ function endSession() {
   S.profile = null;
   S.login = null;
   S.menu = false;
+  S.drop = null;
   S.declined = new Set();
 }
 
@@ -144,7 +146,7 @@ function render() {
 let overlayKey = null;
 function renderOverlay(standalone = true) {
   const html = overlayHTML();
-  const key = S.idle ? "idle" : S.login ? "login" : S.a11y ? "a11y" : S.menu ? "menu" : S.detail ? "detail" : null;
+  const key = S.idle ? "idle" : S.login ? "login" : S.a11y ? "a11y" : S.menu ? "menu" : S.detail ? "detail" : S.drop ? "drop" : null;
   $("#overlay").innerHTML = html;
   // Only animate a modal in when it first appears, not on every keypress.
   if (key && key === overlayKey) $("#overlay").querySelectorAll(".backdrop, .modal").forEach((el) => (el.style.animation = "none"));
@@ -821,7 +823,8 @@ SCREENS.requests = () => {
   const card = (r) => {
     let footer;
     if (r.helper) {
-      footer = `<div class="status-bar" style="color:var(--success);background:color-mix(in srgb, var(--success) 10%, transparent)">${icon("circle-check", 20)} ${p && r.helper.unit === p.unit ? "You're helping" : `${h(r.helper.firstName)} is on it`}</div>`;
+      const where = r.locker ? ` · locker ${label(r.locker)}` : "";
+      footer = `<div class="status-bar" style="color:var(--success);background:color-mix(in srgb, var(--success) 10%, transparent)">${icon("circle-check", 20)} ${p && r.helper.unit === p.unit ? "You're helping" : `${h(r.helper.firstName)} is on it`}${where}</div>`;
     } else if (p && r.by.unit === p.unit) {
       footer = `<div class="status-bar muted" style="background:var(--surface)">Your request · waiting for a helper</div>`;
     } else {
@@ -849,6 +852,37 @@ SCREENS.requests = () => {
     </div>
   </div>`;
 };
+
+// After accepting, the helper picks an empty locker to leave the thing in.
+const heldFor = (n, id) => D.requests.find((x) => x.locker === n && x.id !== id);
+const dropFree = (l, id) => l.status !== "maintenance" && (!l.item || l.status === "onLoan") && !heldFor(l.number, id);
+
+function dropHTML() {
+  const r = D.requests.find((x) => x.id === S.drop.id);
+  const pick = S.drop.pick;
+  const free = D.lockers.filter((l) => dropFree(l, r.id)).length;
+  const cells = D.lockers.map((l) => {
+    const ok = dropFree(l, r.id);
+    const [note, why] = ok ? ["Empty", "empty"] : heldFor(l.number, r.id) ? ["Saved", "saved for another request"]
+      : l.status === "maintenance" ? ["Repair", "under maintenance"] : ["In use", `in use, ${l.item.name}`];
+    const tag = ok ? "button" : "div";
+    return `<${tag} class="cell ${l.number === pick ? "target" : ""} ${ok ? "" : "dim"}" ${ok ? `data-act="dropPick" data-n="${l.number}"` : ""} aria-label="Locker ${l.number}, ${h(why)}">
+      <div class="door"><span class="num">${label(l.number)}</span><span class="handle"></span><span class="item">${note}</span></div>
+    </${tag}>`;
+  }).join("");
+  return `<div class="backdrop" data-act="closeDrop"><div class="modal" role="dialog" aria-modal="true"><div class="drop">
+    <div class="wall">${cells}</div>
+    <div class="form">
+      <div class="row" style="gap:18px;align-items:center">${badge(r.icon, 72)}
+        <div class="h-s" style="font-size:1.875rem;line-height:1.15">Where will you leave it?</div></div>
+      <div class="muted" style="font-size:1.125rem">Pick an empty locker for “${h(r.title)}”. We'll tell ${h(r.by.firstName)} which one to open.</div>
+      <div class="muted small">${free ? `${free} of ${D.lockers.length} lockers are empty right now.` : "No lockers are empty right now. You can still help and hand it over in person."}</div>
+      <button class="btn-primary" data-act="dropConfirm" ${pick ? "" : "disabled"}>${icon("lock-open")} ${pick ? `Use locker ${label(pick)}` : "Pick a locker"}</button>
+      <div class="row"><button class="btn-secondary" style="flex:1" data-act="closeDrop" data-force="1">Cancel</button>
+        <button class="btn-secondary" style="flex:1" data-act="dropConfirm" data-none="1">No locker needed</button></div>
+    </div>
+  </div></div></div>`;
+}
 
 const DEADLINES = [
   ["hour", "Within the hour", () => new Date(Date.now() + 3600000)],
@@ -914,6 +948,7 @@ function overlayHTML() {
         <button class="btn-primary dark" data-act="signOut">${icon("log-out")} Sign out</button></div></div></div>`;
   }
   if (S.detail) return detailHTML();
+  if (S.drop) return dropHTML();
   return "";
 }
 
@@ -1374,20 +1409,32 @@ const ACT = {
   decline: (d) => { S.declined.add(d.id); render(); },
   accept: (d) => {
     const r = D.requests.find((x) => x.id === d.id);
-    requireLogin(`Sign in so ${r.by.firstName} knows who's helping.`, async (resident) => {
+    requireLogin(`Sign in so ${r.by.firstName} knows who's helping.`, (resident) => {
       if (resident.unit === r.by.unit) return toast("That's your own request");
-      S.v.working = r.id;
-      render();
-      await sleep(450);
-      if (r.helper) toast("Someone else just grabbed that one");
-      else {
-        r.helper = resident;
-        toast(`You're on it! ${r.by.firstName} has been notified in the Nook app.`);
-        speak(`You're on it. ${r.by.firstName} has been notified.`);
-      }
-      S.v.working = null;
-      render();
+      S.drop = { id: r.id, pick: null };
+      renderOverlay();
+      speak("Pick an empty locker to leave it in.");
     });
+  },
+  dropPick: (d) => { S.drop.pick = +d.n; renderOverlay(); },
+  closeDrop: (d, el, e) => { if (d.force || e.target === el) { S.drop = null; renderOverlay(); } },
+  dropConfirm: async (d) => {
+    const r = D.requests.find((x) => x.id === S.drop.id);
+    const n = d.none ? null : S.drop.pick;
+    S.drop = null;
+    renderOverlay();
+    S.v.working = r.id;
+    render();
+    await sleep(450);
+    if (r.helper) toast("Someone else just grabbed that one");
+    else {
+      r.helper = S.profile;
+      r.locker = n;
+      toast(`You're on it!${n ? ` Leave it in locker ${label(n)}.` : ""} ${r.by.firstName} has been notified in the Nook app.`);
+      speak(`You're on it.${n ? ` Leave it in locker ${n}.` : ""} ${r.by.firstName} has been notified.`);
+    }
+    S.v.working = null;
+    render();
   },
   postRequest: () => requireLogin("Sign in to post a request from your apartment.", () => go("newRequest")),
   idea: (d) => { S.v.title = d.k; render(); },
